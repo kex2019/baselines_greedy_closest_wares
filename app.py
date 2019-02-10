@@ -27,29 +27,6 @@ def dir_to_string(dr):
         return "MOVE_RIGHT"
     return ""
 
-def position_equal(p1, p2):
-    return p1[0] == p2[0] and p1[1] == p2[1]
-
-# Finds the closest robot for every package
-def robot_for_package(gym):
-    print(gym.map)
-    print(gym.packages)
-    print(gym.robots)
-    # N^2 to find shortest robot for every package
-    shortest_robot = {}
-    for packageId, package in gym.packages.items():
-        shortest = 1e6
-        for i in range(len(gym.robots)):
-            robot = gym.robots[i]
-            if len(robot[1]) >= gym.capacity:
-                continue
-            pos = robot[0]
-            distance = abs(pos[0] - package[0][0]) + abs(pos[1] - package[1][1])
-            if distance < shortest:
-                shortest = distance
-                shortest_robot[packageId] = i
-    return shortest_robot
-
 # Finds the closest package for every robot, or none if the robot is full
 def package_for_robot(gym):
     robots = [None] * len(gym.robots)
@@ -74,67 +51,14 @@ def package_for_robot(gym):
 def path_to(gym, _from, _to):
     astar = pf.Astar(gym)
     newto = astar.available_pos_near(_to)
-    print(_from, ", ", _to, ", newto: ", newto)
-
     instructions = astar(_from, newto).get_instructions()
     return instructions
-    
-    if _to is None:
-        return []
-    queue = [_from]
-    path = []
-    prev = [[None for _ in range((len(gym.map)) + 1)] for _ in range(len(gym.map[0]) + 1)]
-    while len(queue) > 0:
-        cur = queue[0]
-        queue.pop(0)
-        
-        if position_equal(cur, _to):
-            break
-        nextdxdy = [[1,0],[-1,0],[0,1],[0,-1]]
-        nextxy = [[pos[0]+cur[0],pos[1]+cur[1]] for pos in nextdxdy]
-        for i in range(len(nextxy)):
-            x = nextxy[i][0]
-            y = nextxy[i][1]
-            if x < 0 or x >= len(gym.map) or y < 0 or y >= len(gym.map[0]):
-                continue
-
-            if prev[y][x] is None:
-                queue.append([x,y])
-                prev[y][x] = cur
-    # Retrace the path
-    cur = _to
-    while(not position_equal(cur, _from)):
-        path.append(cur)
-        cur = prev[cur[1]][cur[0]]
-    path.append(cur)
-    path.reverse()
-    return path
-
-def deltatodir(delta):
-    if delta[0] == -1:
-        return MOVE_LEFT
-    if delta[0] == 1:
-        return MOVE_RIGHT
-    if delta[1] == -1:
-        return MOVE_UP
-    if delta[1] == 1:
-        return MOVE_DOWN
-    return -1
-
-# Gets the direction for the first element in the path
-def dir_in_path(gym, path):
-    if len(path) < 2:
-        return MOVE_DOWN
-    dx = path[0][0] - path[1][0]
-    dy = path[0][1] - path[1][1]
-    dr = deltatodir([dx,dy])
-    return dr
 
 timestamp = time.time()
 gym = rw.RoboticWarehouse(
-    robots=1,
+    robots=10,
     capacity=1,
-    spawn=5,
+    spawn=30,
 #    spawn_rate=0.1,
     shelve_length=8,
     shelve_height=4,
@@ -143,8 +67,6 @@ gym = rw.RoboticWarehouse(
     cross_throughput=5)
 print("Setup Time: {}".format(time.time() - timestamp))
 print("A robot for every package!")
-print(robot_for_package(gym))
-print(package_for_robot(gym))
 steps = 0
 timestamp = time.time()
 
