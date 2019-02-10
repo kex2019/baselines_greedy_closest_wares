@@ -8,7 +8,7 @@ import collections
 # sys.path.append(os.getcwd())
 
 import robotic_warehouse.robotic_warehouse as rw
-#import utilities.robotic_warehouse_utils.path_finder as pf
+import robotic_warehouse_utils.path_finder as pf
 
 MOVE_DOWN = 0
 MOVE_LEFT = 1
@@ -16,6 +16,16 @@ MOVE_UP = 2
 MOVE_RIGHT = 3
 PICKUP_PACKAGE = 4
 DROP_PACKAGE = 5
+def dir_to_string(dr):
+    if dr == 0:
+        return "MOVE_DOWN"
+    if dr == 1:
+        return "MOVE_LEFT"
+    if dr == 2:
+        return "MOVE_UP"
+    if dr == 3:
+        return "MOVE_RIGHT"
+    return ""
 
 def position_equal(p1, p2):
     return p1[0] == p2[0] and p1[1] == p2[1]
@@ -62,51 +72,42 @@ def package_for_robot(gym):
 
 # Gets the closest path _from, _to
 def path_to(gym, _from, _to):
-    print()
-    print()
-    print()
+    astar = pf.Astar(gym)
+    newto = astar.available_pos_near(_to)
+    print(_from, ", ", _to, ", newto: ", newto)
+
+    instructions = astar(_from, newto).get_instructions()
+    return instructions
     
-    print("Path from ", _from, " to ", _to)
     if _to is None:
         return []
     queue = [_from]
     path = []
-    prev = [[None]*(len(gym.map) + 1)] * (len(gym.map[0]) + 1)
-    
+    prev = [[None for _ in range((len(gym.map)) + 1)] for _ in range(len(gym.map[0]) + 1)]
     while len(queue) > 0:
         cur = queue[0]
-        queue.pop()
-        print("CUR", cur, " to: ", _to)
+        queue.pop(0)
+        
         if position_equal(cur, _to):
             break
-#        if prev[cur[1]][cur[0]] is not None:
-#            print("PREVIOUS at current is not none")
-#            continue
         nextdxdy = [[1,0],[-1,0],[0,1],[0,-1]]
         nextxy = [[pos[0]+cur[0],pos[1]+cur[1]] for pos in nextdxdy]
         for i in range(len(nextxy)):
             x = nextxy[i][0]
             y = nextxy[i][1]
-            print("     prev[",x,",",y,"]: ", prev[y][x])
-            for p in nextxy:
-                print(" prev[",p[0],",",p[1],"]: ", prev[p[1]][p[0]])
+            if x < 0 or x >= len(gym.map) or y < 0 or y >= len(gym.map[0]):
+                continue
 
             if prev[y][x] is None:
-                print("     prev[",x,",",y,"] SET to: ", cur)
                 queue.append([x,y])
                 prev[y][x] = cur
-
-    print("Found path")
     # Retrace the path
     cur = _to
     while(not position_equal(cur, _from)):
         path.append(cur)
-        print("CUR: ", cur)
         cur = prev[cur[1]][cur[0]]
-        print("New cur: ", cur)
     path.append(cur)
     path.reverse()
-    print("RETRACED PATH HAS ", len(path))
     return path
 
 def deltatodir(delta):
@@ -118,7 +119,7 @@ def deltatodir(delta):
         return MOVE_UP
     if delta[1] == 1:
         return MOVE_DOWN
-    return
+    return -1
 
 # Gets the direction for the first element in the path
 def dir_in_path(gym, path):
@@ -126,14 +127,15 @@ def dir_in_path(gym, path):
         return MOVE_DOWN
     dx = path[0][0] - path[1][0]
     dy = path[0][1] - path[1][1]
-    return deltatodir([dx,dy])
+    dr = deltatodir([dx,dy])
+    return dr
 
 timestamp = time.time()
 gym = rw.RoboticWarehouse(
-    robots=10,
+    robots=1,
     capacity=1,
-    spawn=10,
-    spawn_rate=0.1,
+    spawn=5,
+#    spawn_rate=0.1,
     shelve_length=8,
     shelve_height=4,
     shelve_width=4,
@@ -146,9 +148,11 @@ print(package_for_robot(gym))
 steps = 0
 timestamp = time.time()
 
-def get_goal_position(positionDict, goal):
-    if hasattr(goal, "__len__"):# isinstance(goal, collections.Sequence):
+def get_goal_position(positionDict, goal, currentPosition):
+    if hasattr(goal, "__len__"):
         return goal
+    if goal is None or positionDict[goal] is None:
+        return currentPosition
     return positionDict[goal][0]
 
 try:
@@ -157,21 +161,22 @@ try:
         gym.render()
         package_assignments = package_for_robot(gym)
         # For each robot get a path
-        print(package_assignments)
-        robot_paths = [path_to(gym, gym.robots[i][0], get_goal_position(gym.packages, package_assignments[i])) for i in range(len(gym.robots))]
-        dirs = [None] * len(robot_paths)
+        robot_paths = [path_to(gym, gym.robots[i][0], get_goal_position(gym.packages, package_assignments[i], gym.robots[i][0])) for i in range(len(gym.robots))]
+        dirs = [None for _ in range(len(robot_paths))]
         for i in range(len(robot_paths)):
-            if len(robot_paths[i]) <= 2:
-                # If we have a package drop it, otherwise pick it up
-                if len(gym.robots[i][1]) >= 0:
+            if len(robot_paths[i]) == 0: # Going to have to fix this logic
+                 # If we have a package drop it, otherwise pick it up
+                if len(gym.robots[i][1]) > 0:
+                    print("DROP PACKAGE", len(gym.robots[i][1]))
                     dirs[i] = DROP_PACKAGE
                 else:
                     dirs[i] = PICKUP_PACKAGE
                     print("Robot ", i, " picking package")
             else:
-                dirs[i] = dir_in_path(gym, robot_paths[i])
+                dirs[i] = robot_paths[i][0]
 
-        gym.step(gym.action_space.sample())
+        gym.step(dirs)
+        #gym.step(gym.action_space.sample())
         steps += 1
         # time.sleep(0.1)
 except KeyboardInterrupt:
