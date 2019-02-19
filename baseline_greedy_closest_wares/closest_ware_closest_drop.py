@@ -124,11 +124,11 @@ def evaluate(**kwargs):
     if "data" in kwargs:
         data = kwargs["data"]
 
-    output = "data/random_package_random_drop.csv"
+    output = "data/closest_ware_closest_drop.csv"
     if "output" in kwargs:
         output = kwargs["output"]
 
-    name = "random_package_random_drop"
+    name = "closest_ware_closest_drop"
     if "name" in kwargs:
         name = kwargs["name"]
 
