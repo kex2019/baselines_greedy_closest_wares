@@ -13,6 +13,7 @@ import robotic_warehouse.robotic_warehouse as warehouse
 import robotic_warehouse_utils.path_finder as path_finder
 import robotic_warehouse_utils.data_collection as data_collection
 
+
 class Robot():
     def __init__(self, capacity, pathfinder):
         self.capacity = capacity
@@ -38,7 +39,6 @@ class Robot():
 
             if instruction != None:
                 return instruction
-
         """ If there is nothing to do and we have full capacity.. go drop shit."""
         if len(packages) == self.capacity:
             """ IF l1 norm to a drop off == 1 then we can drop of the packages. """
@@ -49,9 +49,11 @@ class Robot():
 
             if instruction != None:
                 return instruction
-
             """ Choose closest drop off """
-            distdropofs = [path_finder.l1norm_dist(position, package.dropoff) for package in packages]
+            distdropofs = [
+                path_finder.l1norm_dist(position, package.dropoff)
+                for package in packages
+            ]
             minpackageidx = np.argmin(distdropofs)
 
             self.instructions = self.pathfinder(
@@ -62,7 +64,10 @@ class Robot():
             return self.instructions[0]
         elif free_packages:
             """ If there is nothing to do, we dont have full capacity and there are packages waiting.. get them. """
-            distpackages = [path_finder.l1norm_dist(position, package.start) for package in free_packages]
+            distpackages = [
+                path_finder.l1norm_dist(position, package.start)
+                for package in free_packages
+            ]
             minpackageidx = np.argmin(distpackages)
             target = free_packages[minpackageidx]
             self.instructions = self.pathfinder(
@@ -124,7 +129,7 @@ def evaluate(**kwargs):
     if "data" in kwargs:
         data = kwargs["data"]
 
-    output = "data/closest_ware_closest_drop.csv"
+    output = "data"
     if "output" in kwargs:
         output = kwargs["output"]
 
