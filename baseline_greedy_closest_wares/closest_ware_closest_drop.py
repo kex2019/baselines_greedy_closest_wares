@@ -160,13 +160,8 @@ def evaluate(**kwargs):
 
     pf = path_finder.Astar(gym)
 
-    gym = data_collection.GymCollect(
-        gym=gym,
-        data=data,
-        output=output,
-        name=name,
-        steps=steps,
-        collect=collect)
+    gym = data_collection.initGymCollect(gym, data, output, name, steps,
+                                         collect)
 
     R = [Robot(capacity, pf) for _ in range(robots)]
 
