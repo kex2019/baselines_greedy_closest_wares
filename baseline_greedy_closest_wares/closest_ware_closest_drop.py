@@ -169,7 +169,7 @@ def evaluate(**kwargs):
     if "render" in kwargs:
         render = kwargs["render"]
 
-    (robots, packages), _, _, _ = gym.reset()
+    robots, packages = gym.reset()
     curr_step = 0
     print()
     while True:
