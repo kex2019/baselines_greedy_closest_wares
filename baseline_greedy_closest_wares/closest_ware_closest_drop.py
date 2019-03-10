@@ -34,7 +34,7 @@ class Robot():
         if len(packages) != self.capacity:
             instruction = None
             for fp in free_packages:
-                if path_finder.l1norm_dist(position, fp.start) == 1:
+                if path_finder.l1norm_dist(position, fp.start) == 1 and fp in robot.reservations:
                     instruction = gym.PICKUP_INSTRUCTION
 
             if instruction != None:
@@ -61,7 +61,10 @@ class Robot():
                 self.pathfinder.available_pos_near(
                     packages[minpackageidx].dropoff)).get_instructions()
             self.instruction_pointer = 1
-            return self.instructions[0]
+            if len(self.instructions) == 0:
+                return gym.DROP_INSTRUCTION
+            else:
+                return self.instructions[0]
         elif free_packages:
             """ If there is nothing to do, we dont have full capacity and there are packages waiting.. get them. """
             distpackages = [
@@ -70,11 +73,15 @@ class Robot():
             ]
             minpackageidx = np.argmin(distpackages)
             target = free_packages[minpackageidx]
+            robot.reservations.add(target)
             self.instructions = self.pathfinder(
                 position, self.pathfinder.available_pos_near(
                     target.start)).get_instructions()
             self.instruction_pointer = 1
-            return self.instructions[0]
+            if len(self.instructions) == 0:
+                return gym.PICKUP_INSTRUCTION
+            else:
+                return self.instructions[0]
         else:
             """ If there is nothing to do, we dont have full capactiy and there are no packages waiting.. do some random shit. """
             return gym.PICKUP_INSTRUCTION
